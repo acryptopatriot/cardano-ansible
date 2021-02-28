@@ -1,0 +1,6 @@
+- name: Install Cardano Dependencies
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: latest
+    update_cache: yes
+  loop: "{{ cardano_dependencies }}
