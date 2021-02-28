@@ -1,3 +1,4 @@
+---
 - name: Install Cardano Dependencies
   ansible.builtin.apt:
     name: "{{ item }}"
@@ -17,6 +18,7 @@
       ansible.builtin.get_url:
         url: "{{ cabal_download_url }}"
         dest: ~/files/cabal_installation.tar.xz
+        # checksum: sha256:b218be5dd12cd808fd879b191f5182e1203af321
 
     - name: Unpack Cabal installation file
       ansible.builtin.unarchive:
@@ -39,3 +41,4 @@
         dest: ~/.local/bin
         remote_src: yes
         mode: 0700
+
