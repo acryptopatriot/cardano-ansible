@@ -3,4 +3,4 @@
     name: "{{ item }}"
     state: latest
     update_cache: yes
-  loop: "{{ cardano_dependencies }}"
+  loop: "{{ cardano_dependencies_ubuntu }}"
