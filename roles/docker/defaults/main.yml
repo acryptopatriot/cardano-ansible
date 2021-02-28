@@ -1,4 +1,4 @@
-docker_required_packages:
+docker_dependencies:
   - apt-transport-https
   - ca-certificates
   - curl
@@ -6,3 +6,8 @@ docker_required_packages:
   - python3-pip
   - virtualenv
   - python3-setuptools
+
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io

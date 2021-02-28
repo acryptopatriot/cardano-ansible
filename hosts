@@ -4,16 +4,19 @@ all:
     dockers:
       hosts:
         localhost:
+    producers:
+      hosts:
+        localhost:
+          cardano_port: 3001
+          peers: []
+    relays:
+      hosts:
+        localhost:
+          cardano_port: 3001
+          peers: []
     cardano:
-      producers:
-        hosts:
-          localhost:
-            cardano_port: 3001
-            peers: []
-      relays:
-        hosts:
-          localhost:
-            cardano_port: 3001:
-            peers: []
+      hosts:
+        producers
+        relays
     vars:
       poolticker: test
