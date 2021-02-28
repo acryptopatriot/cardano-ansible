@@ -6,6 +6,7 @@
   loop: "{{ cardano_dependencies_ubuntu }}"
 
 - name: Download, unpack, and install Cabal
+  become: no
   block:
     - name: Make directory for Cabal download
       ansible.builtin.file:
@@ -33,7 +34,8 @@
         state: directory
 
     - name: Copy cabal binary to local bin directory
-      ansible.builtin.Copy:
-        src: ~files/cabal ~/.local/bin
+      ansible.builtin.copy:
+        src: ~/files/cabal
+        dest: ~/.local/bin
         remote_src: yes
-        mode: 700
+        mode: 0700
