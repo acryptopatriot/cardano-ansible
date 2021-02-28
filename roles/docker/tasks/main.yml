@@ -1,19 +1,2 @@
-tasks:
-  - name: Install aptitude using apt
-    ansible.builtin.apt:
-      name: aptitude
-      state: latest
-      update_cache: yes
-      force_apt_get: yes
-
-  - name: Install required system packages
-    ansible.builtin.apt:
-      name: "{{ item }}"
-      state: latest
-      update_cache: yes
-    loop: {{ docker_required_packages }}
-
-  - name: Add Docker GPG apt key
-    apt_key:
-      url: https://download.docker.com/linux/ubuntu/GPG
-      state: present
+- include: linux_ubuntu.yml
+  when: ansible_facts['distribution'] == 'Ubuntu'
