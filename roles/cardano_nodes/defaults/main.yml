@@ -1,0 +1,137 @@
+# Default variables. Do not change these. If you want to change the variables set them in the 
+# following files in order of precedence from first to last.
+# 1. Current tasks role's vars/main.yml file. This will apply to all hosts with this role. (This one takes highest precedence)
+# 2. The last applied role in the playbook vars/main.yml file. This will apply to all hosts in the playbook.
+# 3. Inventory's host_vars host file, i.e. inventories/production/host_vars/relay1.test.com. This will apply only to the specific host.
+# 4. Inventory's hosts file. This will only apply to the specific host.
+# 5. Current task role's group_vars file. i.e. inventories/production/group_vars/cardano_relay_nodes.yml. This will only apply to the hosts in the specific inventory.
+# 6. The last applied role's default vars/main.yml file. This will apply to all hosts in the playbook.
+# 7. Roles defaults, etc. defaults/main.yml
+
+path_var: "{{ lookup('env', 'PATH') }}"
+
+# Directories
+directory_downloads: "~/downloads"
+directory_downloads_permissions: 0770
+directory_cardano: "/opt/cardano-node"
+directory_cardano_permissions: 0750
+directory_bin: "/usr/local/bin"
+directory_systemd: "/etc/systemd/system"
+
+# Cardano Settings
+cardano_version: "1.25.1"
+cardano_username: "cardano"
+cardano_port: 3001
+cardano_node_service_enabled: yes # no
+cardano_node_service_state: started # stopped
+cardano_node_type: relay # relay or producer
+cardano_network: mainnet
+
+# SSH Settings
+ssh_key_generate: no
+ssh_key_deploy: no
+
+# Host Settings
+set_hostname: no
+
+cabal:
+  version: "3.2.0.0"
+  cleanup: yes
+  archive:
+    url: "https://downloads.haskell.org/~cabal/cabal-install-3.2.0.0/cabal-install-3.2.0.0-x86_64-unknown-linux.tar.xz"
+    destination: "{{ directory_downloads }}/cabal_installation.tar.xz"
+  binary: "cabal"
+  build_commands: ""
+
+ghc:
+  version: "8.10.2"
+  cleanup: yes
+  archive:
+    url: "https://downloads.haskell.org/ghc/8.10.2/ghc-8.10.2-x86_64-deb9-linux.tar.xz"
+    destination: "{{ directory_downloads }}/ghc-8.10.2-x86_64-deb9-linux.tar.xz"
+  build_commands:
+    - ./configure
+    - make install
+
+libsodium:
+  version: "66f017f1"
+  cleanup: yes
+  archive:
+    url: "https://github.com/input-output-hk/libsodium"
+    destination: "{{ directory_downloads }}/libsodium"
+  build_commands:
+    - git checkout 66f017f1
+    - ./autogen.sh
+    - ./configure
+    - make
+    - make install
+
+cardano:
+  version: "{{ cardano_version }}"
+  cleanup: no
+  dependencies:
+    ubuntu:
+      - automake
+      - build-essential
+      - pkg-config
+      - libffi-dev
+      - libgmp-dev
+      - libssl-dev
+      - libtinfo-dev
+      - libsystemd-dev
+      - zlib1g-dev
+      - make
+      - g++
+      - tmux
+      - git
+      - jq
+      - wget
+      - libncursesw5
+      - libtool
+      - autoconf
+    redhat:
+      - gitgcc
+      - gcc-c++
+      - tmux
+      - gmp-devel
+      - make
+      - tar
+      - xz
+      - wget
+      - zlib-devel
+      - libtool
+      - autoconf
+      - systemd-devel
+      - ncurses-devel
+      - ncurses-compat-libs
+  archive:
+    url: https://github.com/input-output-hk/cardano-node.git
+    destination: "{{ directory_downloads }}/cardano-node"
+    cleanup: yes
+    build_commands:
+      - "git checkout {{ cardano_version }}"
+      - "cabal configure --with-compiler={{ ghc.version }}"
+    binary:
+      node: "dist-newstyle/build/x86_64-linux/ghc-{{ ghc.version }}/cardano-node-{{ cardano_version }}/x/cardano-node/build/cardano-node/cardano-node"
+      cli: "dist-newstyle/build/x86_64-linux/ghc-{{ ghc.version }}/cardano-cli-{{ cardano_version }}/x/cardano-cli/build/cardano-cli/cardano-cli"
+  binary:
+    node: cardano-node
+    cli: cardano-cli
+  directory: "{{ directory_cardano }}"
+  subdirectories:
+    - bin
+    - config
+    - db
+    - scripts
+    - logs
+    - sockets
+  configuration:
+    config: config.json
+    topology: topology.json
+  genesis:
+    byron:
+      file: "byron-genesis.json"
+      hash: "5f20df933584822601f9e3f8c024eb5eb252fe8cefb24d1317dc3d432e940ebb"
+    shelley:
+      file: "shelley-genesis.json"
+      hash: "1a3be38bcbb7911969283716ad7aa550250226b76a61fc51cc9a9a35d9276d81"

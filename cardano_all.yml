@@ -1,0 +1,9 @@
+---
+#
+
+- import_playbook: cardano_nodes.yml
+
+- import_playbook: cardano_producer_nodes.yml
+
+- import_playbook: cardano_relay_nodes.yml
+

@@ -1,0 +1,21 @@
+{
+  "Producers": [
+{% for instance in instances %}
+{% if instance != item[0] and hostvars[inventory_hostname].instances[instance].type == "producer" %}
+    {
+      "addr": "{{ hostvars[inventory_hostname].instances[instance].address }}",
+      "port": {{ hostvars[inventory_hostname].instances[instance].port }},
+      "valency": 1
+    },
+{% endif %}
+{% endfor %}
+{% for external_relay in cardano_external_relays %}
+    {
+      "addr": "{{ external_relay.address }}",
+      "port": {{ external_relay.port }},
+      "valency": {{ external_relay.valency }}
+    }{% if not loop.last %},{% endif %}
+
+{% endfor %}
+  ]
+}

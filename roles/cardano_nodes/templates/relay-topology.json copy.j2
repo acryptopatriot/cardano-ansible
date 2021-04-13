@@ -1,0 +1,20 @@
+{
+  "Producers": [
+    {% for producer in groups['cardano_producer_nodes'] %}
+    {
+        "address": "{{ producer }}",
+        "port": {{hostvars[producer].cardano_port }},
+        "valency": 1
+    },
+    {% endfor %}
+
+    {% for relay in cardano_relays %}
+    {
+      "addr": "{{ relay.address }}",
+      "port": {{ relay.port }},
+      "valency": {{ relay.valency }}
+    }{% if not loop.last %},{% endif %}
+
+    {% endfor %}
+  ]
+}

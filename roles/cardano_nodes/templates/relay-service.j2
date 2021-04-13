@@ -1,0 +1,29 @@
+# file: /etc/systemd/system/cardano-node.service 
+
+[Unit]
+Description     = Cardano node service
+Wants           = network-online.target
+After           = network-online.target 
+
+[Service]
+User            = {{ item['value'].username }}
+Type            = simple
+PIDFile         = {{ directory_cardano }}/{{ item['key'] | default('default') }}/pid
+WorkingDirectory= {{ directory_cardano }}/{{ item['key'] | default('default') }}
+ExecStart       = {{ directory_cardano }}/{{ item['key'] | default('default') }}/bin/{{ cardano.binary.node }} run \
+  --database-path  db/ \
+  --socket-path sockets/node.socket \
+  --port {{ item['value'].port }} \
+  --config config/{{ cardano.configuration.config }} \
+  --topology config/{{ cardano.configuration.topology }}
+KillSignal=SIGINT
+RestartKillSignal=SIGINT
+StandardOutput=journal
+StandardError=journal
+TimeoutStopSec=5
+LimitNOFILE=32768
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy        = multi-user.target

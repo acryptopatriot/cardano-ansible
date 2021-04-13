@@ -1,0 +1,44 @@
+all:
+  hosts:
+  children:
+    cardano_producer_nodes:
+      hosts:
+        192.168.1.147:
+          instances:
+            producer:
+              type: "producer"
+              username: cardano
+              usergroup: cardano
+              network: mainnet
+              address: 127.0.0.1
+              port: 3001
+              state: started
+              enabled: yes
+
+    cardano_relay_nodes:
+      hosts:
+        192.168.1.147:
+          instances:
+            relay:
+              type: relay
+              username: cardano
+              usergroup: cardano
+              network: mainnet
+              address: 127.0.0.1
+              port: 3002
+              state: started
+              enabled: yes
+            relay2:
+              type: relay
+              username: cardano
+              usergroup: cardano
+              network: mainnet
+              address: 127.0.0.1
+              port: 3003
+              state: started
+              enabled: yes
+
+    cardano_nodes:
+      children:
+        cardano_producer_nodes:
+        cardano_relay_nodes:

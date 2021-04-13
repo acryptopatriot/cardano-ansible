@@ -1,0 +1,8 @@
+#cardano_user_name: cardano_group_vars
+
+#cardano_node_type: relay # relay or producer
+
+#cardano_node_instances:
+#  - { name: "relay", type: "relay", address: "127.0.0.1", username: "cardano", usergroup: "cardano", network: "mainnet", port: 3002, state: "started", enabled: "yes"}
+
+type: relay

@@ -1,0 +1,5 @@
+---
+# common tasks
+
+- include: linux_ubuntu.yml
+  when: ansible_facts['distribution'] == 'Ubuntu'

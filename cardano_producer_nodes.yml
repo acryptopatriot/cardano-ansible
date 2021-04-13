@@ -1,0 +1,7 @@
+---
+# cardano producer nodes
+- hosts: cardano_producer_nodes
+  become: yes
+  roles:
+    - common
+    - cardano_nodes

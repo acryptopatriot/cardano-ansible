@@ -1,0 +1,13 @@
+{
+  "Producers": [
+{% for instance in instances %}
+{% if instance != item[0] and hostvars[inventory_hostname].instances[instance].type == "relay" %}
+    {
+        "addr": "{{ hostvars[inventory_hostname].instances[instance].address }}",
+        "port": {{ hostvars[inventory_hostname].instances[instance].port }},
+        "valency": 1
+    }{% if not loop.last %},{% endif %}
+{% endif %}
+{% endfor %}
+  ]
+}

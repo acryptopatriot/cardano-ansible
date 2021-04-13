@@ -1,0 +1,7 @@
+#cardano_node_instances:
+#  - { name: "producer", type: "producer", address: "127.0.0.1", username: "cardano", usergroup: "cardano", network: "mainnet", port: 3001, state: "started", enabled: "yes"}
+
+cardano_relays:
+  []
+ # - { "address": "127.0.0.1", port: 3002, valency: 1}
+  #- { "address": "relays.stakepool247.eu", port: 3001, valency: 1}

@@ -1,0 +1,27 @@
+---
+- name: Update and upgrade all packages
+  become: true
+  ansible.builtin.apt:
+    upgrade: yes
+    update_cache: yes
+
+- name: Ensure NTP is installed
+  ansible.builtin.apt:
+    name: ntp
+    state: present
+  tags: ntp
+
+- name: Ensure NTP is configured
+  template:
+    src: ntp.conf.j2
+    dest: /etc/ntp.conf
+  notify:
+    - restart ntp
+  tags: ntp
+
+- name: Ensure NTP service is running and enabled
+  service:
+    name: ntp
+    state: started
+    enabled: yes
+  tags: ntp

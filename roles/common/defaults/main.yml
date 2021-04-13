@@ -1,0 +1,29 @@
+# Logging
+journald_use: yes
+journald_persistent: yes
+journald_sshd: yes
+
+
+# SSHD Settings
+sshd_port: 22
+sshd_allowed_users: [cardano_username]
+sshd_disable_root: yes
+sshd_key_generate: no
+sshd_key_deploy: no
+
+# MFA (Google Authenticator)
+mfa_sshd_google_enable: no
+
+# fail2ban
+fail2ban_install: yes
+fail2ban_enable: yes
+fail2ban_sshd_enable: yes
+fail2ban_sshd_log: systemd # /var/log/auth.log if not using systemd
+
+# Firewall
+firewall_enable: yes
+firewall_enable_ssh: yes
+
+# AIDE
+aide_enable: yes
+aide_directories_exclude: 

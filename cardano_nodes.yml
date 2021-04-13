@@ -1,0 +1,7 @@
+---
+# cardano nodes hosts
+- hosts: cardano_nodes
+  become: yes
+  roles:
+    - common
+    - cardano_nodes

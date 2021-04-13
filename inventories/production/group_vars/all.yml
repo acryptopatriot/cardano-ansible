@@ -1,0 +1,22 @@
+timeservers:
+  - "0.ubuntu.pool.ntp.org"
+  - "1.ubuntu.pool.ntp.org"
+  - "2.ubuntu.pool.ntp.org"
+  - "3.ubuntu.pool.ntp.org"
+
+# Directories
+directory_downloads: "~/downloads"
+directory_downloads_permissions: 0700
+directory_cardano: "/opt/cardano-node"
+directory_cardano_permissions: 0750
+directory_bin: "/usr/local/bin"
+directory_systemd: "/etc/systemd/system"
+
+# Cardano Variables
+username: cardano
+usergroup: cardano
+network: mainnet
+address: 127.0.0.1
+port: 3002
+state: started
+enabled: yes

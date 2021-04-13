@@ -1,0 +1,276 @@
+- name: Set hostname
+  tags: set-hostname
+  ansible.builtin.hostname:
+    name: "{{ hostname }}"
+  when: set_hostname
+
+- name: Install Cardano Dependencies
+  tags: cardano-dependencies
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: latest
+    update_cache: yes
+  loop: "{{ cardano.dependencies.ubuntu }}"
+
+- name: Make directory for downloads
+  ansible.builtin.file:
+    path: "{{ directory_downloads }}"
+    state: directory
+
+- name: Download, unpack, and install Cabal
+  tags: cabal-install
+
+  block:
+
+    - name: Make sure downloads directory exists
+      ansible.builtin.file:
+        path: "{{ directory_downloads }}"
+        state: directory
+
+    - name: Download Cabal archive file
+      ansible.builtin.get_url:
+        url: "{{ cabal.archive.url }}"
+        dest: "{{ cabal.archive.destination }}"
+
+    - name: Unzip Cabal archive file
+      ansible.builtin.unarchive:
+        src: "{{ cabal.archive.destination }}"
+        dest: "{{ directory_downloads }}/"
+        remote_src: yes
+
+    - name: Copy cabal binary to /usr/local/bin directory
+      become: yes
+      ansible.builtin.copy:
+        src: "{{ directory_downloads }}/{{ cabal.binary}}"
+        dest: "{{ directory_bin }}"
+        remote_src: yes
+        mode: 0711
+      
+    - name: Update Cabal
+      command: "{{ cabal.binary }} update"
+
+    - name: Get Cabal version
+      command: "{{ cabal.binary }} --version"
+      register: cabal_version
+
+    - debug:
+        msg: "Cabal Version: {{ cabal_version }}"
+
+    - name: Remove cabal archive
+      tags: cabal-install-cleanup
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ cabal.archive.destination }}"
+        - "{{ directory_downloads }}/{{ cabal.binary }}"
+        - "{{ directory_downloads }}/{{ cabal.binary }}.sig"
+      when: cabal.cleanup
+
+- name: Install GHC
+  tags: ghc-install
+
+  block:
+
+    - name: Make sure downloads directory exists
+      ansible.builtin.file:
+        path: "{{ directory_downloads }}"
+        state: directory
+
+    - name: Download Haskell GHC archive file
+      ansible.builtin.get_url:
+        url: "{{ ghc.archive.url }}"
+        dest: "{{ ghc.archive.destination }}"
+
+    - name: Unzip Haskell GHC archive file
+      ansible.builtin.unarchive:
+        src: "{{ ghc.archive.destination}}"
+        dest: "{{ directory_downloads }}"
+        remote_src: yes
+
+    - name: Remove GHC archive file
+      tags: ghc-install-cleanup
+      ansible.builtin.file:
+        path: "{{ ghc.archive.destination }}"
+        state: absent
+      when: ghc.cleanup
+
+    - name: Configure Haskell GHC installation
+      command: "{{ item }}"
+      args:
+        chdir: "{{ directory_downloads }}/ghc-{{ ghc.version }}"
+      loop: "{{ ghc.build_commands }}"
+
+    - name: Get Haskell GHC version
+      command: ghc --version
+      register: ghc_version
+
+    - debug:
+        msg: "Haskell GHC Version: {{ ghc_version }}"
+
+    - name: Remove GHC archive folder
+      tags: ghc-install-cleanup
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ ghc.archive.destination }}"
+        - "{{ directory_downloads }}/ghc-{{ ghc.version }}"
+      when: ghc.cleanup
+
+- name: Install Libsodium
+  tags: install-libsodium
+
+  block:
+
+    - name: Make sure downloads directory exists
+      ansible.builtin.file:
+        path: "{{ directory_downloads }}"
+        state: directory
+
+    - name: Clone Libsodium git repository
+      ansible.builtin.git:
+        repo: "{{ libsodium.archive.url }}"
+        clone: yes
+        dest: "{{ libsodium.archive.destination }}"
+
+    - name: Checkout Libsodium
+      command: "{{ item }}"
+      args:
+        chdir: "{{ libsodium.archive.destination }}"
+      loop: "{{ libsodium.build_commands }}"
+
+    - name: Remove libsodium installation files
+      ansible.builtin.file:
+        path: "{{ libsodium.archive.destination }}/"
+        state: absent
+      when: libsodium.cleanup
+
+- name: Compile Cardano from source
+  tags: cardano-compile
+
+  block:
+
+    - name: Clone Cardano Node repository
+      ansible.builtin.git:
+        repo: "https://github.com/input-output-hk/cardano-node.git"
+        clone: yes
+        dest: "{{ cardano.archive.destination }}"
+
+    - name: Checkout Cardano version {{ cardano.version }}
+      command: git checkout {{ cardano.version }}
+      args:
+        chdir: "{{ cardano.archive.destination }}"
+
+    - name: Configure with Cabal
+      command: cabal configure --with-compiler=ghc-8.10.2
+      args:
+        chdir: "{{ cardano.archive.destination }}"
+
+    - name: Add cardano-crypto-praos to cabal.project.local
+      ansible.builtin.lineinfile:
+        line: "package cardano-crypto-praos"
+        path: "{{ cardano.archive.destination }}/cabal.project.local"
+        state: present
+
+    - name: Add libsodium flag to cabal.project.local
+      ansible.builtin.lineinfile:
+        line: "  flags: -external-libsodium-vrf"
+        path: "{{ cardano.archive.destination }}/cabal.project.local"
+        state: present
+       
+    - name: Compile cardano with cabal
+      command: "{{ item }}"
+      args:
+        chdir: "{{ cardano.archive.destination }}"
+      loop:
+        - cabal clean
+        - cabal update
+        - cabal build all
+
+- name: "Install Cardano Instances"
+  tags: cardano-install
+
+  block:
+
+    - debug:
+        var: instances
+
+    - name: Create cardano-node directories
+      tags: cardano-install-directories
+      ansible.builtin.file:
+        path: "{{ directory_cardano }}/{{ item[0] | default('default') }}/{{ item[1] }}"
+        state: directory
+        owner: "{{ hostvars[inventory_hostname].instances[item[0]].username }}"
+        group: "{{ hostvars[inventory_hostname].instances[item[0]].usergroup }}"
+        mode: 0700
+      with_nested:
+        - "{{ instances }}"
+        - "{{ cardano.subdirectories }}"
+
+    - name: Copy cardano binaries
+      tags: cardano-install-binaries
+      ansible.builtin.copy:
+        src: "{{ cardano.archive.destination}}/{{ cardano.archive.binary[item[1]] }}"
+        dest: "{{ directory_cardano }}/{{ item[0] | default('default') }}/bin/{{ cardano.binary[item[1]] }}"
+        owner: "{{ hostvars[inventory_hostname].instances[item[0]].username }}"
+        group: "{{ hostvars[inventory_hostname].instances[item[0]].usergroup }}"
+        remote_src: yes
+        mode: 0750
+      loop: "{{ instances | product(cardano.archive.binary) | list }}"
+    
+    - name: Copy genesis files
+      tags: cardano-install-genesis
+      ansible.builtin.copy:
+        src: "{{ hostvars[inventory_hostname].instances[item[0]].network }}-{{ cardano.genesis[item[1]].file }}"
+        dest: "{{ directory_cardano }}/{{ item[0] | default('default') }}/config/{{ hostvars[inventory_hostname].instances[item[0]].network }}-{{ cardano.genesis[item[1]].file }}"
+        owner: "{{ hostvars[inventory_hostname].instances[item[0]].username }}"
+        group: "{{ hostvars[inventory_hostname].instances[item[0]].usergroup }}"
+      with_nested:
+        - "{{ instances }}"
+        - "{{ cardano.genesis }}"
+
+- name: Remove Cardano installation files
+  ansible.builtin.file:
+    path: "{{ cardano.archive.destination }}/"
+    state: absent
+  when: cardano.cleanup
+
+- name: Copy configuration files
+  tags: cardano-install-configurations
+  ansible.builtin.template:
+    src: "{{ hostvars[inventory_hostname].instances[item[0]].type }}-{{ cardano.configuration[item[1]] }}.j2"
+    dest: "{{ directory_cardano }}/{{ item[0] | default('default') }}/config/{{ cardano.configuration[item[1]] }}"
+    owner: "{{ hostvars[inventory_hostname].instances[item[0]].username }}"
+    group: "{{ hostvars[inventory_hostname].instances[item[0]].usergroup }}"
+    mode: 0660
+  with_nested:
+    - "{{ instances }}"
+    - "{{ cardano.configuration }}"
+
+- name: Install Cardano Node service
+  tags: cardano-install-service
+
+  block:
+
+    - name: Copy cardano-node.service file
+      tags: cardano-install-service-file
+      ansible.builtin.template:
+        src: "{{ hostvars[inventory_hostname].instances[item.key].type | default('relay') }}-service.j2"
+        dest: "{{ directory_systemd }}/cardano-node-{{ item.key | default('default') }}.service"
+        owner: root
+        group: root
+        mode: 0644
+      loop: "{{ instances | dict2items }}"
+        
+    - name: Reload systemd daemons
+      ansible.builtin.systemd:
+        daemon_reload: yes
+
+    - name: Start and Enable cardano-node service
+      tags: cardano-install-service-activate
+      ansible.builtin.systemd:
+        name: cardano-node-{{ item['key'] | default('default') }}.service
+        state: "{{ item['value'].state }}"
+        enabled: " {{ item['value'].enabled }}"
+      loop: "{{ instances | dict2items }}"
